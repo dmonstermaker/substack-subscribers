@@ -1,64 +1,130 @@
 <!DOCTYPE html>
 <html>
-<head></head>
-<body>
-<script>
-(function () {
-    var allowedOrigins = [
-        'https://speakerine.app'
-    ];
-
-    var hostWindow;
-    var hostOrigin = window.top;
-
-    return;
-
-    window.addEventListener('message', async function (event) {
-        // Only accept our own events from known origins
-        // if (!allowedOrigins.includes(event.origin)) return;
-        if (!event.data.type || !event.data.type.startsWith('substack-subscribers:')) {
-            switch (event.data.type) {
-                // Host acknowledgement of our init message
-                case 'substack-subscribers:ack':
-                    hostWindow = event.source;
-                    hostOrigin = event.origin;
-                    break;
-                case 'substack-subscribers:subscribe':
-                    var email = event.data.email;
-                    // Send subscription to Substack
-                    var response = await fetch('https://noobwriter.substack.com/api/v1/free', {
-                        method: 'POST',
-                        headers: {
-                            'content-type': 'application/json',
-                            'cache-control': 'max-age=0',
-                            'accept-language': 'en-US,en;q=0.9',
-                            'accept': '*/*',
-                        },
-                        body: JSON.stringify({
-                            'email': email,
-                            'additional_referring_pub_ids': '',
-                            'source': 'cover_page',
-                            'current_referrer': '',
-                            'current_url': 'https://noobwriter.substack.com/',
-                            'first_referrer': '',
-                            'first_url': 'https://noobwriter.substack.com/',
-                        }),
-                    });
-
-                    if (response.ok) {
-                        // Signal to host that subscription is successful
-                        hostWindow.postMessage({type: 'substack-subscribers:subscribed', email: email}, hostOrigin);
-                    } else {
-                        // Signal to host that subscription has failed
-                        hostWindow.postMessage({type: 'substack-subscribers:error', body: response.text()}, hostOrigin);
-                    }
-                    // Send a message to our host to signal our presence
-                    hostWindow.postMessage({type: 'substack-subscribers:init'}, hostOrigin);
-                    break;
-            }
-        }
-    });
-})()
-</script>
-</body>
+   <head></head>
+   <body>
+      <h1>Subscribe to our Newsletter</h1>
+      <form id="subscriptionForm">
+         <label for="email">Email:</label>
+         <input type="email" id="email" name="email" required>
+         <button type="submit" onClick="subscribe()">Subscribe</button>
+      </form>
+      <script>
+         function subscribe() {
+             const email = document.getElementById('email').value;
+             NoobWriter.subscribeEmail(email);
+         }
+             
+         (function() {
+             var targetWindow = null;
+             var targetOrigin = null;
+         
+             var carrdSuccess = null;
+             var carrdFailure = null;
+         
+             // Only accept our own events
+             window.addEventListener('message', function(event) {
+                 if (!event.data.type || !event.data.type.startsWith('substack-subscribers:')) return;
+         
+                 switch (event.data.type) {
+                     // Use iframe's init event to discover the noobwriter window & domain
+                     case 'substack-subscribers:init':
+                         targetWindow = event.source;
+                         targetOrigin = event.origin;
+                         // Acknowledge receipt of event
+                         targetWindow.postMessage({
+                             type: 'substack-subscribers:ack'
+                         }, targetOrigin);
+                         break;
+         
+                     // Subscription successfully sent to Substack \o/
+                     case 'substack-subscribers:subscribed':
+                         // Success function is provided by Carrd
+                         // carrdSuccess();
+                         console.log('Success!');
+                         break;
+         
+                     // Handle subscription error
+                     case 'substack-subscribers:error':
+                         alert('There was an error registering your email to the mailing list.\nYou can head over to noobwriter.substack.com if the problem persists');
+                         console.error(event.data.body);
+                         // carrdFailure();
+                         console.log('Failure!');
+                         break;
+                 }
+             });
+         
+             // Export a global Techtrails.subscribeEmail function that can be used by the form's submit event
+             window.NoobWriter = {
+                 subscribeEmail: function(email, success, failure) {
+                     // Store success & failure functions locally
+                     carrdSuccess = success;
+                     carrdFailure = failure;
+                     // Dispatch email to iframe for subscription
+                     targetWindow.postMessage({
+                         type: 'substack-subscribers:subscribe',
+                         email: email
+                     }, targetOrigin);
+                 }
+             };
+         })();
+         
+             
+         (function () {
+             var allowedOrigins = [
+                 'https://speakerine.app'
+             ];
+         
+             var hostWindow;
+             var hostOrigin = window.top;
+         
+             return;
+         
+             window.addEventListener('message', async function (event) {
+                 // Only accept our own events from known origins
+                 // if (!allowedOrigins.includes(event.origin)) return;
+                 if (!event.data.type || !event.data.type.startsWith('substack-subscribers:')) {
+                     switch (event.data.type) {
+                         // Host acknowledgement of our init message
+                         case 'substack-subscribers:ack':
+                             hostWindow = event.source;
+                             hostOrigin = event.origin;
+                             break;
+                         case 'substack-subscribers:subscribe':
+                             var email = event.data.email;
+                             // Send subscription to Substack
+                             var response = await fetch('https://noobwriter.substack.com/api/v1/free', {
+                                 method: 'POST',
+                                 headers: {
+                                     'content-type': 'application/json',
+                                     'cache-control': 'max-age=0',
+                                     'accept-language': 'en-US,en;q=0.9',
+                                     'accept': '*/*',
+                                 },
+                                 body: JSON.stringify({
+                                     'email': email,
+                                     'additional_referring_pub_ids': '',
+                                     'source': 'cover_page',
+                                     'current_referrer': '',
+                                     'current_url': 'https://noobwriter.substack.com/',
+                                     'first_referrer': '',
+                                     'first_url': 'https://noobwriter.substack.com/',
+                                 }),
+                             });
+         
+                             if (response.ok) {
+                                 // Signal to host that subscription is successful
+                                 hostWindow.postMessage({type: 'substack-subscribers:subscribed', email: email}, hostOrigin);
+                             } else {
+                                 // Signal to host that subscription has failed
+                                 hostWindow.postMessage({type: 'substack-subscribers:error', body: response.text()}, hostOrigin);
+                             }
+                             // Send a message to our host to signal our presence
+                             hostWindow.postMessage({type: 'substack-subscribers:init'}, hostOrigin);
+                             break;
+                     }
+                 }
+             });
+         })()
+      </script>
+   </body>
 </html>
