@@ -7,7 +7,7 @@
       <input type="email" id="email" name="email" required>
       <button type="submit" onClick="subscribe()">Subscribe</button>
       <script>
-         function subscribe() {
+         async function subscribe() {
              console.log('1. Subscribe called');
              const email = document.getElementById('email').value;
             console.log('2. Calling substack');
