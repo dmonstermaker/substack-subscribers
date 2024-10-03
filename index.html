@@ -3,15 +3,34 @@
    <head></head>
    <body>
       <h1>Subscribe to our Newsletter</h1>
-      <form id="subscriptionForm">
-         <label for="email">Email:</label>
-         <input type="email" id="email" name="email" required>
-         <button type="submit" onClick="subscribe()">Subscribe</button>
-      </form>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+      <button type="submit" onClick="subscribe()">Subscribe</button>
       <script>
          function subscribe() {
+             console.log('1. Subscribe called');
              const email = document.getElementById('email').value;
-             NoobWriter.subscribeEmail(email);
+            console.log('2. Calling substack');
+              // Send subscription to Substack
+              var response = await fetch('https://noobwriter.substack.com/api/v1/free', {
+                  method: 'POST',
+                  headers: {
+                      'content-type': 'application/json',
+                      'cache-control': 'max-age=0',
+                      'accept-language': 'en-US,en;q=0.9',
+                      'accept': '*/*',
+                  },
+                  body: JSON.stringify({
+                      'email': email,
+                      'additional_referring_pub_ids': '',
+                      'source': 'cover_page',
+                      'current_referrer': '',
+                      'current_url': 'https://noobwriter.substack.com/',
+                      'first_referrer': '',
+                      'first_url': 'https://noobwriter.substack.com/',
+                  }),
+              });
+            console.log('3. Substack call complete', response);
          }
              
          (function() {
@@ -60,6 +79,7 @@
                      carrdSuccess = success;
                      carrdFailure = failure;
                      // Dispatch email to iframe for subscription
+                     console.log('3. calling targetWindow.postMessage');
                      targetWindow.postMessage({
                          type: 'substack-subscribers:subscribe',
                          email: email
